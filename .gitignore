@@ -11,3 +11,6 @@ data/generated/raw_model_outputs/*.txt
 
 # Local pilot backup (not part of the published dataset)
 data/generated_pilot_backup/
+
+# Local pre-regeneration backups (not part of the published dataset)
+data/generated_backup_*/

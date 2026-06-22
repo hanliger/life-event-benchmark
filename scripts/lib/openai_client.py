@@ -34,7 +34,21 @@ class MissingApiKeyError(RuntimeError):
 
 
 def get_model() -> str:
-    return os.getenv("OPENAI_MODEL") or DEFAULT_MODEL
+    # GEN_MODEL takes precedence so generation can target a non-OpenAI model
+    # (e.g. claude-sonnet-4-6) without touching the experiment's OPENAI_MODEL.
+    return os.getenv("GEN_MODEL") or os.getenv("OPENAI_MODEL") or DEFAULT_MODEL
+
+
+def _provider_for(model: str) -> str:
+    """Route by explicit GEN_PROVIDER, else infer from the model id prefix."""
+    explicit = os.getenv("GEN_PROVIDER")
+    if explicit:
+        return explicit.strip().lower()
+    if model.startswith("claude"):
+        return "anthropic"
+    if model.startswith("gemini"):
+        return "google"
+    return "openai"
 
 
 def get_temperature() -> float:
@@ -139,15 +153,23 @@ def generate_text(
     temperature = get_temperature() if temperature is None else temperature
     max_output_tokens = get_max_output_tokens() if max_output_tokens is None else max_output_tokens
 
-    client = _client()
-    content = _call_chat(
-        client,
-        model=model,
-        system_prompt=system_prompt,
-        user_prompt=user_prompt,
-        temperature=temperature,
-        max_output_tokens=max_output_tokens,
-    )
+    provider = _provider_for(model)
+    if provider == "openai":
+        client = _client()
+        content = _call_chat(
+            client,
+            model=model,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            temperature=temperature,
+            max_output_tokens=max_output_tokens,
+        )
+    else:
+        # Non-OpenAI providers reuse the experiment's unified client (retry +
+        # provider quirks handled there). JSON is requested via the prompt.
+        from lib.llm_clients import complete  # lazy import
+        content = complete(provider, model, system=system_prompt, user=user_prompt,
+                           max_tokens=max_output_tokens)
     if raw_tag:
         _save_raw(raw_tag, content)
     return content

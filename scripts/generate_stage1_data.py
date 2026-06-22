@@ -111,6 +111,75 @@ EXISTING_STATE_HINTS: dict[str, list[str]] = {
     ],
 }
 
+# Implicit disambiguating cues for occurred_positive ONLY. The benchmark tests
+# INFERENCE: the model must deduce the life event from how the user incidentally
+# refers to people/things and from the unique financial footprint the event leaves
+# — NEVER from an announcement. The audit (occurred_audit.json) showed that with no
+# cue at all, labels collapse to a generic sibling ("이사 black hole") or vanish
+# (휴직/연금 → no_event). So each label gets a REQUIRED *implicit* tell that
+# distinguishes it from its nearest sibling, surfaced naturally while the user does
+# ordinary banking. Forbidden: stating the event or its defining act ("결혼했다",
+# "집 샀다", "퇴사했다"). Required: the tell leaks through reference/footprint.
+# Two variants per label. NOT applied to weak_signal/upcoming (ambiguity intended).
+DISAMBIG_CUES: dict[str, list[str]] = {
+    "결혼": ["배우자를 '와이프/남편/배우자'로 자연스럽게 지칭(예전 호칭 아님)하고 신혼집 살림을 합치는 맥락 — '결혼했다'는 말은 금지",
+           "양가·신혼집·부부 공동생활 관련 지출이 처음 등장 — 혼인 사실은 호칭과 정황으로만"],
+    "이혼/별거": ["배우자를 '전남편/전처' 또는 '이제 따로 산다'는 식으로 지칭하고 공동계좌·위자료를 정리 — '이혼했다' 직접 진술 금지",
+              "함께 쓰던 공동 자금을 둘로 가르고 각자 계좌로 분리하는 맥락 — 헤어짐은 정황으로만"],
+    "출산/입양": ["'우리 아기/갓난쟁이'가 처음 등장하고 분유·기저귀·산후조리 등 육아 지출이 시작 — '출산했다' 진술 금지",
+              "아이 앞으로 통장·보험을 새로 드는 맥락에서 신생아 존재가 자연스럽게 묻어남"],
+    "부양가족 발생/해소": ["'이제 부모님이랑 같이 산다/부모님을 모신다'는 맥락과 부모 생활비·병원비를 새로 떠안음(신생아 아님) — '부양가족 생겼다' 진술 금지",
+                  "같이 살던 가족이 빠져 부양 부담이 줄어든 맥락이 지출 변화로 드러남"],
+    "가족 사망": ["'돌아가신 아버지/어머니' 등 고인을 지칭하며 상속·고인 계좌·장례비를 정리 — 호칭과 정황으로만",
+              "상속받은 자금이나 고인 명의 계좌 해지를 처리하는 맥락"],
+    "독립/분가": ["'부모님 집에서 나와 이제 혼자 산다'는 맥락과 생애 처음 본인 명의로 공과금·관리비를 내는 정황(가족 동반 이사 아님)",
+              "본가에서 나와 처음 혼자 살림을 꾸리는 1인 가구 전환이 지출로 드러남"],
+    "이사": ["주거 형태나 가족 구성 변화 없이 사는 곳만 옮긴 단순 이전 — 매매/전세/독립/결혼 등 다른 사건 신호는 일절 없음",
+           "주소만 바뀌었을 뿐 다른 인생 변화 신호가 전혀 없는 평범한 이전"],
+    "전세·월세 계약/갱신": ["전세자금대출 이자, 보증금, 집주인·임대차 갱신처럼 '남의 집을 빌려 산다'는 흔적(소유 아님) — 매매 신호 금지",
+                  "보증금·월세·전세대출 관련 흔적으로 임차 상태가 드러남"],
+    "주택 구매": ["취득세·재산세 고지서, 주택담보대출 원리금, 등기 비용처럼 '내 소유 집'에서만 나오는 흔적 — '집 샀다' 진술 금지, 전세 신호 아님",
+              "주담대 원리금 상환과 재산세 자동납부 설정 등 자가 소유 footprint로 드러남"],
+    "주택 매각/퇴거": ["큰 매도대금 입금, 중개수수료, 양도세처럼 '집을 팔아 처분했다'는 흔적 — 단순 이사 신호 아님",
+                "보유 부동산을 처분하고 목돈이 들어와 자금을 굴리는 맥락"],
+    "취업/복직": ["생애 첫(혹은 경력단절 후) 급여가 처음 들어오기 시작하고 4대보험이 잡히는 맥락 — 다른 회사로 옮긴 게 아님(이직 아님)",
+              "그동안 소득이 없다가 첫 월급 입금이 시작된 사회 진입/복귀 정황"],
+    "이직/전근": ["급여 입금처(회사명)가 다른 곳으로 바뀌고 전 직장 퇴직정산 뒤 새 급여가 들어오는 맥락 — 첫 취업이 아님",
+              "근무지·급여 지급처가 다른 회사로 바뀐 흔적(경력 연속, 첫 취업 아님)"],
+    "휴직": ["출산·육아·병가로 일정 기간만 일을 쉬어 급여가 육아휴직급여 등으로 바뀌었고 '복직 예정'이 분명한 맥락 — '무기한'·퇴직금·실업급여 같은 영구 중단 신호는 절대 금지(퇴사 아님)",
+           "복직 시점을 염두에 두고 휴직 기간 동안만 고정지출을 잠시 줄이는 정황 — 다시 출근/복귀할 것이 전제됨"],
+    "퇴사/실직": ["퇴직금 입금, 실업급여, 4대보험 상실처럼 '일을 영구히 그만뒀다'는 흔적 — 복직 전제는 없음(휴직 아님)",
+              "급여가 끊기고 퇴직금·실업급여로 버티며 복귀 계획이 없는 정황"],
+    "창업/프리랜서 전환": ["사업자 통장 개설, 부가세, 불규칙한 사업 입금처럼 '직접 벌이를 시작했다'는 흔적 — 월급쟁이 아님",
+                  "고정 월급 대신 사업/프리랜서 수입이 불규칙하게 들어오는 정황"],
+    "폐업/사업 중단": ["사업자 정리, 사업 대출 상환, 사업 계좌 해지처럼 '벌이던 사업을 접었다'는 흔적",
+                "매출 입금이 끊기고 사업 관련 대출·계좌를 닫는 정황"],
+    "본인 장기 교육/재교육 시작": ["본인 대학원·장기과정 등록금/학자금대출 흔적으로 '내가 다시 공부를 시작했다'가 드러남(자녀 아님)",
+                      "본인 학업 등록금·학자금 관련 지출이 새로 생긴 정황"],
+    "자녀 교육 단계 진입": ["자녀가 상급 학교(초/중/고/대학)에 입학·진학해 입학금·새 학기 등록금이 처음 발생하는 맥락 — 단순 학원 변경이 아니라 교육 '단계'가 바뀜",
+                  "아이가 새 과정에 들어가 입학 관련 목돈·교복·등록금이 처음 나가는 정황(기존 지출 조정 아님)"],
+    "유학/장기연수": ["반복되는 해외 송금, 현지 통화 카드 사용, 해외 학비처럼 '한동안 외국에 나가 있다'는 흔적",
+              "장기 해외 체류에 따른 송금·현지 비용 흔적으로 드러남"],
+    "은퇴 준비 시작": ["정년을 앞두고 노후자금·퇴직연금을 새로 굴리기 시작하는 맥락 — 아직 연금을 '받는' 단계는 아님",
+              "퇴직을 앞두고 노후 대비 저축·연금 가입을 시작한 정황(수령 전)"],
+    "연금 수령 시작": ["정년 퇴직·은퇴로 더는 근로소득이 없는 사람에게 이번 달부터 매달 들어오기 시작한 연금성 입금 — 나이 들어 일을 그만둔 맥락이 함께 드러나야 함(신규 급여·임대수입과 구별)",
+              "오랜 직장생활을 마치고 근로소득이 끊긴 뒤, 노후에 매달 지급되기 시작한 정기 입금 정황(수령 개시, 가입/준비 아님)"],
+    "본인/가족 질병·입원·수술": ["큰 병원비·수술비 지출과 실손보험 청구처럼 입원·치료가 있었음이 드러남",
+                    "갑작스런 의료비를 분할·대출로 처리하고 보험금을 청구하는 맥락"],
+    "사고/재난 피해": ["사고·재해 보험금 수령과 복구비 지출처럼 피해를 입었음이 드러남",
+               "재해 복구 비용을 보험금·대출로 충당하는 맥락"],
+    "금융사기/피싱 피해": ["지급정지, 피해 신고, 사기 이체처럼 사기를 당했음이 드러남",
+                  "사기 피해로 계좌를 막고 피해금을 신고·복구하는 맥락"],
+}
+
+
+def disambig_cue_for_label(label: str, index: int) -> str:
+    cues = DISAMBIG_CUES.get(label)
+    if not cues:
+        return "표적 사건을 가장 가까운 형제 사건과 구별해 주는, 선언이 아닌 암묵적 정황·금융 흔적"
+    return cues[index % len(cues)]
+
+
 UPDATE_ALLOWED_BY_STATUS = {
     "occurred": True,
     "weak_signal": False,
@@ -268,7 +337,21 @@ def build_jobs(
                              .replace("{TARGET_LABEL}", label)
                              .replace("{ACTION_HINT}", hint))
 
-        else:  # occurred_positive / pre_event_weak_signal / pre_event_upcoming / cancelled_reversed
+        elif gen_type == "occurred_positive":
+            # occurred positives additionally inject a per-label disambiguating cue
+            # so the event does not collapse to a generic sibling (see DISAMBIG_CUES).
+            label = labels[i % len(labels)]
+            hint = action_hint_for_label(label, taxonomy)
+            action_id = representative_action_id(label, taxonomy)
+            cue = disambig_cue_for_label(label, i // len(labels))
+            job.update(target_label=label, target_action_id=action_id, action_hint=hint,
+                       near_miss_event=None, disambig_cue=cue)
+            job["prompt"] = (prompt_template
+                             .replace("{TARGET_LABEL}", label)
+                             .replace("{ACTION_HINT}", hint)
+                             .replace("{DISAMBIG_CUE}", cue))
+
+        else:  # pre_event_weak_signal / pre_event_upcoming / cancelled_reversed
             label = labels[i % len(labels)]
             hint = action_hint_for_label(label, taxonomy)
             action_id = representative_action_id(label, taxonomy)
@@ -508,6 +591,7 @@ def run_generate(
     execute: bool,
     overwrite: bool,
     drop_invalid: bool,
+    only_labels: Optional[set[str]] = None,
 ) -> None:
     taxonomy = load_taxonomy()
     seeds = read_jsonl(SEED_PATH)
@@ -541,14 +625,19 @@ def run_generate(
 
     for gen_type in types:
         out_path = output_dir / OUTPUT_FILENAMES[gen_type]
-        if out_path.exists() and not overwrite:
+        if out_path.exists() and not overwrite and not only_labels:
             print(f"[skip] {out_path} exists (use --overwrite to replace)")
             continue
         count = counts.get(gen_type, 0)
         if max_items is not None:
             count = min(count, max_items)
         jobs = build_jobs(gen_type, count, taxonomy, seeds, labels)
-        print(f"[generate] {gen_type}: {len(jobs)} record(s)")
+        if only_labels:
+            jobs = [j for j in jobs if j.get("target_label") in only_labels]
+            print(f"[generate] {gen_type}: {len(jobs)} record(s) for labels {sorted(only_labels)} "
+                  f"(merging into existing {out_path.name})")
+        else:
+            print(f"[generate] {gen_type}: {len(jobs)} record(s)")
 
         records: list[dict[str, Any]] = []
         for job in jobs:
@@ -592,9 +681,19 @@ def run_generate(
                 print(f"  [keep] {conv_id}: kept with {len(flags)} quality_flag(s)")
             records.append(record)
 
-        n = write_jsonl(out_path, records)
-        flagged = sum(1 for r in records if r.get("quality_flags"))
-        print(f"  wrote {n} record(s) -> {out_path} ({flagged} flagged)\n")
+        if only_labels and out_path.exists():
+            # merge: replace regenerated conversation_ids in place, keep the rest
+            existing = read_jsonl(out_path)
+            new_by_id = {r["conversation_id"]: r for r in records}
+            merged = [new_by_id.pop(r["conversation_id"], r) for r in existing]
+            merged.extend(new_by_id.values())  # any genuinely new ids
+            n = write_jsonl(out_path, merged)
+            flagged = sum(1 for r in records if r.get("quality_flags"))
+            print(f"  merged {len(records)} record(s) into {out_path} (total {n}, {flagged} flagged)\n")
+        else:
+            n = write_jsonl(out_path, records)
+            flagged = sum(1 for r in records if r.get("quality_flags"))
+            print(f"  wrote {n} record(s) -> {out_path} ({flagged} flagged)\n")
 
 
 def _placeholder_record(job, model, created_at, flags):
@@ -687,6 +786,9 @@ def main() -> None:
     p_gen.add_argument("--execute", action="store_true", help="Actually call the API")
     p_gen.add_argument("--overwrite", action="store_true")
     p_gen.add_argument("--drop-invalid", action="store_true")
+    p_gen.add_argument("--only-labels", type=str, default=None,
+                       help="comma-separated target labels; regenerate only these and "
+                            "merge into the existing pool file (preserves other records)")
 
     p_dry = sub.add_parser("dry-run", help="Print planned prompts (never calls API)")
     p_dry.add_argument("--plan", type=Path, default=REPO / "configs/stage1_generation_plan.yaml")
@@ -699,8 +801,10 @@ def main() -> None:
         normalize_positive(args.input, args.output, args.overwrite)
     elif args.command == "generate":
         plan = read_yaml(args.plan)
+        only = {s.strip() for s in args.only_labels.split(",") if s.strip()} if args.only_labels else None
         run_generate(parse_types(args.types), plan, args.output_dir,
-                     args.max_items, args.execute, args.overwrite, args.drop_invalid)
+                     args.max_items, args.execute, args.overwrite, args.drop_invalid,
+                     only_labels=only)
     elif args.command == "dry-run":
         plan = read_yaml(args.plan)
         run_dry_run(parse_types(args.types), plan, args.max_items)
