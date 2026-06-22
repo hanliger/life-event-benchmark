@@ -1,0 +1,97 @@
+python3 scripts/generate_stage1_data.py generate --plan configs/stage1_generation_plan.yaml --types neutral_no_event,hard_negative,existing_state_negative,pre_event_weak_signal,pre_event_upcoming,cancelled_reversed \
+  --output-dir data/generated/single --execute --overwrite
+[generate] neutral_no_event: 15 record(s)
+  [repair] STAGE1-SINGLE-001013 attempt 1: 2 issue(s)
+  wrote 15 record(s) -> data/generated/single/no_event_neutral.jsonl (0 flagged)
+
+[generate] hard_negative: 30 record(s)
+  [repair] STAGE1-SINGLE-002003 attempt 1: 2 issue(s)
+  [repair] STAGE1-SINGLE-002016 attempt 1: 2 issue(s)
+  wrote 30 record(s) -> data/generated/single/hard_negative.jsonl (0 flagged)
+
+[generate] existing_state_negative: 10 record(s)
+  [repair] STAGE1-SINGLE-003004 attempt 1: 2 issue(s)
+  wrote 10 record(s) -> data/generated/single/existing_state_negative.jsonl (0 flagged)
+
+[generate] pre_event_weak_signal: 15 record(s)
+  [repair] STAGE1-SINGLE-004012 attempt 1: 2 issue(s)
+  wrote 15 record(s) -> data/generated/single/pre_event_weak_signal.jsonl (0 flagged)
+
+[generate] pre_event_upcoming: 15 record(s)
+  [repair] STAGE1-SINGLE-005002 attempt 1: 2 issue(s)
+  [repair] STAGE1-SINGLE-005008 attempt 1: 2 issue(s)
+  [repair] STAGE1-SINGLE-005009 attempt 1: 2 issue(s)
+  [repair] STAGE1-SINGLE-005015 attempt 1: 1 issue(s)
+  wrote 15 record(s) -> data/generated/single/pre_event_upcoming.jsonl (0 flagged)
+
+[generate] cancelled_reversed: 5 record(s)
+  wrote 5 record(s) -> data/generated/single/cancelled_reversed.jsonl (0 flagged)
+
+python3 scripts/build_stage1_eval_sets.py --plan configs/stage1_generation_plan.yaml
+[build] combined single eval -> /home/mikelee/life_event_benchmark/data/generated/single/stage1_single_eval_v0.jsonl (120 records)
+[build] mixed eval -> /home/mikelee/life_event_benchmark/data/generated/mixed/stage1_mixed_eval_v0.jsonl (30 records)
+python3 scripts/validate_stage1_dataset.py --plan configs/stage1_generation_plan.yaml
+# Stage 1 Dataset Quality Report
+
+- Total records: **150**
+- Avg turns / record: 11.49
+- Avg user turns / record: 5.87
+
+## Records by generation type
+- all_negative: 6
+- cancelled_reversed: 5
+- cancelled_sequence: 2
+- easy_mixed_positive: 8
+- existing_state_negative: 10
+- hard_mixed_positive: 8
+- hard_negative: 30
+- neutral_no_event: 15
+- occurred_positive: 30
+- pre_event_mixed: 6
+- pre_event_upcoming: 15
+- pre_event_weak_signal: 15
+
+## Records by target life event
+- n/a: 30
+- no_event: 15
+- 가족 사망: 8
+- 결혼: 13
+- 독립/분가: 8
+- 부양가족 발생/해소: 10
+- 이사: 11
+- 이직/전근: 13
+- 이혼/별거: 8
+- 전세·월세 계약/갱신: 13
+- 출산/입양: 10
+- 퇴사/실직: 11
+
+## Records by target action id
+- FA-01: 27
+- FA-03: 16
+- FA-04: 13
+- FA-05: 13
+- FA-07: 8
+- FA-08: 20
+- FA-09: 6
+- FA-10: 2
+- null: 45
+
+## Integrity checks
+- ⚠️ Invalid records (validation flags): 3
+- ⚠️ Direct life-event label leakage (turns): 2
+- ✅ Chatbot leakage phrases (turns): 0
+- ✅ Invalid evidence turns (non-user): 0
+- ✅ no_event records with life_events: 0
+- ✅ event-related records with empty life_events: 0
+- ✅ pre_event incorrectly marked occurred: 0
+- ✅ cancelled incorrectly marked occurred: 0
+
+## Flagged examples
+- `STAGE1-SINGLE-000007` (occurred_positive):
+    - S1-U2: direct life-event label '출산'
+- `STAGE1-SINGLE-000009` (occurred_positive):
+    - turn count 12 out of [7,10]
+- `STAGE1-SINGLE-000026` (occurred_positive):
+    - S1-A2: direct life-event label '이직'
+
+[report] wrote /home/mikelee/life_event_benchmark/data/generated/quality_reports/stage1_quality_report.json and .md

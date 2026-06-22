@@ -1,0 +1,52 @@
+# Stage 1 Life Event Detection — pilot generation plan
+#
+# All counts below can be overridden from the CLI:
+#   python scripts/generate_stage1_data.py generate --types hard_negative --max-items 3 ...
+#
+# `pilot.*`  -> single-dialogue records (one per generation_type file)
+# `mixed.*`  -> mixed-session bundles built by scripts/build_stage1_eval_sets.py
+
+pilot:
+  occurred_positive_from_seed: 30
+  neutral_no_event: 15
+  hard_negative: 30
+  existing_state_negative: 10
+  pre_event_weak_signal: 15
+  pre_event_upcoming: 15
+  cancelled_reversed: 5
+
+mixed:
+  easy_mixed_positive: 8
+  hard_mixed_positive: 8
+  pre_event_mixed: 6
+  all_negative: 6
+  cancelled_sequence: 2
+
+labels:
+  # Active subset used for this week's pilot. These are the only labels that
+  # generation will target. (Full taxonomy lives in data/processed/life_event_taxonomy.json)
+  active_subset:
+    - 결혼
+    - 이혼/별거
+    - 출산/입양
+    - 부양가족 발생/해소
+    - 가족 사망
+    - 독립/분가
+    - 이사
+    - 전세·월세 계약/갱신
+    - 이직/전근
+    - 퇴사/실직
+
+generation:
+  difficulty: medium
+  min_turns: 7
+  max_turns: 10
+  min_user_turns: 4
+  max_user_turns: 6
+  max_repair_attempts: 2
+  seed: 42
+
+# Default OpenAI model used when OPENAI_MODEL is absent from the environment.
+# Override with the OPENAI_MODEL env var or --model on the CLI.
+model:
+  default: gpt-4o-mini

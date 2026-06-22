@@ -1,0 +1,1 @@
+{"scenario_id": "SINGLE-NEG-TODO-0001", "task": "stage1_life_event_detection", "input": {"sessions": [{"session_id": "S1", "source": "TODO_replace_with_general_banking_dialogue", "turns": []}]}, "gold": {"life_event_detected": false, "life_events": []}, "metadata": {"negative_type": "general_or_hard_negative", "near_miss_event": null, "annotation_status": "todo_fill_dialogue"}}

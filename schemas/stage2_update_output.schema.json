@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Stage 2 Update Selection Output Placeholder",
+  "type": "object",
+  "required": [
+    "memory_updates",
+    "standing_action_decisions"
+  ],
+  "properties": {
+    "memory_updates": {
+      "type": "array"
+    },
+    "standing_action_decisions": {
+      "type": "array"
+    }
+  }
+}

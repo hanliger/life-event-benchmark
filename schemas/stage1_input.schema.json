@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Stage 1 Life Event Detection Input",
+  "type": "object",
+  "required": [
+    "scenario_id",
+    "input"
+  ],
+  "properties": {
+    "scenario_id": {
+      "type": "string"
+    },
+    "task": {
+      "const": "stage1_life_event_detection"
+    },
+    "input": {
+      "type": "object",
+      "required": [
+        "sessions"
+      ],
+      "properties": {
+        "sessions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "session_id",
+              "turns"
+            ],
+            "properties": {
+              "session_id": {
+                "type": "string"
+              },
+              "turns": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "turn_id",
+                    "speaker",
+                    "text"
+                  ],
+                  "properties": {
+                    "turn_id": {
+                      "type": "string"
+                    },
+                    "speaker": {
+                      "enum": [
+                        "user",
+                        "assistant"
+                      ]
+                    },
+                    "text": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

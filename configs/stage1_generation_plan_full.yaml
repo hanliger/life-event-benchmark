@@ -1,0 +1,68 @@
+# Stage 1 Life Event Detection — FULL taxonomy generation plan
+#
+# Covers every active=true life-event label (24). Labels are the single source of
+# truth via `labels.active_subset` below, consumed by scripts/generate_stage1_data.py
+# (active_labels()). Per-type counts live under `single:` (the generator reads
+# `single` first, falling back to `pilot` for the original pilot plan).
+#
+#   python scripts/generate_stage1_data.py generate \
+#     --plan configs/stage1_generation_plan_full.yaml \
+#     --types occurred_positive,neutral_no_event,hard_negative,existing_state_negative,pre_event_weak_signal,pre_event_upcoming,cancelled_reversed \
+#     --execute --overwrite
+
+# single-dialogue records, one JSONL per generation_type
+single:
+  occurred_positive: 48          # ~2 per active label (API-generated for the full run)
+  neutral_no_event: 30
+  hard_negative: 48              # ~2 per active label
+  existing_state_negative: 24    # 1 per active label
+  pre_event_weak_signal: 24      # 1 per active label
+  pre_event_upcoming: 24         # 1 per active label
+  cancelled_reversed: 24         # 1 per active label
+
+mixed:
+  easy_mixed_positive: 16
+  hard_mixed_positive: 16
+  pre_event_mixed: 12
+  all_negative: 12
+  cancelled_sequence: 6
+
+labels:
+  # Full active taxonomy (active=true in data/processed/life_event_taxonomy.json).
+  active_subset:
+    - 결혼
+    - 이혼/별거
+    - 출산/입양
+    - 부양가족 발생/해소
+    - 가족 사망
+    - 독립/분가
+    - 이사
+    - 전세·월세 계약/갱신
+    - 주택 구매
+    - 주택 매각/퇴거
+    - 취업/복직
+    - 이직/전근
+    - 휴직
+    - 퇴사/실직
+    - 창업/프리랜서 전환
+    - 폐업/사업 중단
+    - 본인 장기 교육/재교육 시작
+    - 자녀 교육 단계 진입
+    - 유학/장기연수
+    - 은퇴 준비 시작
+    - 연금 수령 시작
+    - 본인/가족 질병·입원·수술
+    - 사고/재난 피해
+    - 금융사기/피싱 피해
+
+generation:
+  difficulty: medium
+  min_turns: 7
+  max_turns: 10
+  min_user_turns: 4
+  max_user_turns: 6
+  max_repair_attempts: 2
+  seed: 42
+
+model:
+  default: gpt-4o-mini

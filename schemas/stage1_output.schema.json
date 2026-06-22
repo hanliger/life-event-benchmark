@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Stage 1 Life Event Detection Output",
+  "type": "object",
+  "required": [
+    "life_event_detected",
+    "life_events"
+  ],
+  "properties": {
+    "life_event_detected": {
+      "type": "boolean"
+    },
+    "life_events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "session_id",
+          "life_event_label",
+          "event_status",
+          "evidence_turns"
+        ],
+        "properties": {
+          "session_id": {
+            "type": "string"
+          },
+          "life_event_label": {
+            "type": "string"
+          },
+          "event_status": {
+            "enum": [
+              "occurred",
+              "upcoming",
+              "weak_signal",
+              "implicit_candidate"
+            ]
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "evidence_turns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "brief_reason": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
